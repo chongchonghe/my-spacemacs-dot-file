@@ -5,6 +5,7 @@
 ;;(defun dotspacemacs/user-config ()
 ;; Ref: https://www.emacswiki.org/emacs/LoadingLispFiles
 (require 'mu4e)
+
 (setq mail-user-agent 'mu4e-user-agent)
 (setq mu4e-maildir "~/mbsync2/umdastro")
 (setq mu4e-get-mail-command "mbsync -a")

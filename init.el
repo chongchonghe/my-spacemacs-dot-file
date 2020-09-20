@@ -1,4 +1,5 @@
 ;; -*- mode: emacs-lisp -*-
+;;+OPTIONS: overview
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
 
@@ -31,6 +32,13 @@ values."
    ;; List of configuration layers to load.
    dotspacemacs-configuration-layers
    '(
+     javascript
+     ;; (osx :variables osx-use-option-as-meta t)
+     (osx :variables
+          osx-command-as       'meta
+          osx-option-as        'hyper
+          osx-swap-option-and-command t)
+     ;; osx
      python
      html
      ;; ----------------------------------------------------------------
@@ -39,13 +47,16 @@ values."
      ;; <M-m f e R> (Emacs style) to install them.
      ;; ----------------------------------------------------------------
      helm
-     auto-completion
+     (auto-completion :variables
+                      auto-completion-tab-key-behavior 'cycle
+                      )
      better-defaults
      emacs-lisp
      git
      markdown
-     org
-     mu4e
+     (org :variables org-enable-github-support t)
+     (mu4e :variables
+           mu4e-installation-path "/usr/local/Cellar/mu/1.2.0_1/share/emacs/site-lisp")
      (shell :variables
             shell-default-height 30
             shell-default-position 'bottom)
@@ -54,16 +65,21 @@ values."
      version-control
      (latex :variables
             latex-enable-folding t)
+     (elfeed :variables
+             rmh-elfeed-org-files (list "~/.spacemacs.d/private/elfeed.org"))
      )
    ;; List of additional packages that will be installed without being
    ;; wrapped in a layer. If you need some configuration for these
    ;; packages, then consider creating a layer. You can also put the
    ;; configuration in `dotspacemacs/user-config'.
-   dotspacemacs-additional-packages '()
+   dotspacemacs-additional-packages '(atomic-chrome)
    ;; A list of packages that cannot be updated.
    dotspacemacs-frozen-packages '()
    ;; A list of packages that will not be installed and loaded.
-   dotspacemacs-excluded-packages '()
+   dotspacemacs-excluded-packages
+   '(
+     smartparens
+     )
    ;; Defines the behaviour of Spacemacs when installing packages.
    ;; Possible values are `used-only', `used-but-keep-unused' and `all'.
    ;; `used-only' installs only explicitly used packages and uninstall any
@@ -138,7 +154,7 @@ values."
    ;; Default font, or prioritized list of fonts. `powerline-scale' allows to
    ;; quickly tweak the mode-line size to make separators look not too crappy.
    dotspacemacs-default-font '("Source Code Pro"
-                               :size 14
+                               :size 15
                                :weight normal
                                :width normal
                                :powerline-scale 1.1)
@@ -264,7 +280,7 @@ values."
    ;;                       text-mode
    ;;   :size-limit-kb 1000)
    ;; (default nil)
-   dotspacemacs-line-numbers nil
+   dotspacemacs-line-numbers t
    ;; Code folding method. Possible values are `evil' and `origami'.
    ;; (default 'evil)
    dotspacemacs-folding-method 'evil
@@ -308,11 +324,18 @@ before packages are loaded. If you are unsure, you should try in setting them in
   (setq-default
    ;; dotspacemacs-line-numbers t       ; replaced by display-line-numbers-mode
    global-auto-revert-mode 1
+   global-display-line-numbers-mode t
    )
   ;; ;; start emacs in server mode so that skim can talk to it
   ;; (server-start) ; from .emacs.d.bk/init.el, latex block
-  (global-set-key (kbd "s-x") 'helm-M-x)
-  (setq mu4e-maildir "~/mbsync2/umdastro")
+
+  ;; This is only needed once, near the top of the file
+  ;;(eval-when-compile
+  ;;  ;; Following line is not needed if use-package.el is in ~/.emacs.d
+  ;;  (add-to-list 'load-path "<path where use-package is installed>")
+  (add-to-list 'load-path "/Users/chongchonghe/.spacemacs.d/addons/ess-18.10.2/lisp")
+  (add-to-list 'load-path "/Users/chongchonghe/.spacemacs.d/addons")
+  ;;  (require 'use-package))
   )
 
 (defun dotspacemacs/user-config ()
@@ -322,120 +345,9 @@ layers configuration.
 This is the place where most of your configurations should be done. Unless it is
 explicitly specified that a variable should be set before a package is loaded,
 you should place your code here."
-  ;; :q should kill the current buffer rather than quitting emacs entirely
-  (evil-ex-define-cmd "q" 'kill-this-buffer)
-  ;; Need to type out :quit to close emacs
-  (evil-ex-define-cmd "quit" 'evil-quit)
+
+  (load-file "~/.spacemacs.d/user-config.el") ;; This is a file exported from user-config.org via org babel.
   )
-
-;;(load-directory "~/.spacemacs.d/my-lisp")
-(load-file "~/.spacemacs.d/my-lisp/mail.el")
-
-(defun dotspacemacs/user-config ()
-  ;; ;; latex
-  (setq TeX-auto-save t)
-  (add-hook 'LaTeX-mode-hook 'hs-minor-mode)
-  (add-hook 'LaTeX-mode-hook 'outline-minor-mode)
-  (setq TeX-PDF-mode t)	      ;; Compile documents to PDF by default
-  ;; The following two lines make forward syncing possible. Tested on 2020-02-17
-  (setq TeX-view-program-selection '((output-pdf "PDF Viewer")))
-  (setq TeX-view-program-list
-        '(("PDF Viewer" "/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b")))
-  ;; CDLaTeX: bug, won't recognize multiple files if turned on
-  ;; (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex)
-  ;; Make emacs aware of multi-file projects: do not need on spacemacs. not working when cdlatex is on
-  ;; (setq-default TeX-master nil)
-  (electric-pair-mode)
-  (add-hook 'LaTeX-mode-hook
-            '(lambda ()
-               (define-key LaTeX-mode-map (kbd "$") 'self-insert-command)
-               ))
-
-  ;; (setq TeX-parse-self t)
-  ;; ;; (add-hook 'latex-mode-hook 'turn-on-cdlatex)   ; with Emacs latex mode
-  ;; (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
-  ;; (setq reftex-plug-into-AUCTeX t)
-  ;; ;; (setq reftex-default-bibliography '("/Users/chongchonghe/Documents/bib_tmp.bib"))
-  ;; ;; (setq helm-bibtex-bibliography '("/Users/chongchonghe/Documents/bib_tmp.bib"))
-
-  ;; (setq TeX-source-correlate-start-server t)
-  ;; ;;
-  ;; (setq TeX-source-correlate-mode t) ; ?
-  ;; (setq TeX-source-correlate-method 'synctex) ; ?
-  )
-
-(defun dotspacemacs/user-config () ; org mode
-  ;; org mode
-  (setq-default dotspacemacs-configuration-layers
-                '(
-                  (org :variables org-projectile-file "~/Dropbox/notes/tasks.org")
-                  ))
-  (with-eval-after-load 'org
-    (setq-default dotspacemacs-configuration-layers
-                  '((org :variables org-enable-github-support t)))
-    (setq org-agenda-files "~/Dropbox/notes/agenda.org")
-    (setq org-default-notes-file "~/Dropbox/notes/work.org")
-    (setq org-capture-templates
-    	'(("g" "General todo" entry (file+headline "/Users/chongchonghe/tasks.org" "Tasks")
-    	   "* TODO [#B] %?")
-    	  ("t" "Task" entry (file+headline "" "Tasks")
-    	   "* TODO %?\n  %u\n  %a")
-    	  )
-    	)
-    ;; (setq org-default-priority ?A)
-    ;;set colours for priorities
-    ;; (setq org-priority-faces '((?A . (:foreground "#F0DFAF" :weight bold))
-    ;;                            (?B . (:foreground "LightSteelBlue"))
-    ;;                            (?C . (:foreground "OliveDrab"))))
-    ;;open agenda in current window
-    ;; (setq org-agenda-window-setup (quote current-window))
-    ;;http://pragmaticemacs.com/emacs/org-mode-basics-vi-a-simple-todo-list/
-    ;; (setq org-capture-templates
-    ;;       '(("t" "todo" entry (file+headline "/Users/bjm/todo.org" "Tasks")
-    ;;          "* TODO [#A] %?")))
-    ;;http://www.howardism.org/Technical/Emacs/capturing-intro.html
-    ;; (add-to-list 'org-capture-templates
-    ;;              '("w" "Work-related Task"  entry
-    ;;                (file "~/Dropbox/notes/work.org")
-    ;;                "* TODO %?" :empty-lines 1))
-    ;; (add-to-list 'org-capture-templates
-    ;;              '("g" "General Task"  entry
-    ;;                (file org-default-notes-file)
-    ;;                "* TODO %?" :empty-lines 1))
-    )
-  ;;   ;; The following code causes the error:
-  ;;   ;; Error (use-package): org-projectile/:config: Symbol’s function definition is void: org-projectile:per-repo
-  ;;   ;; (setq org-agenda-files (quote ("/Users/chongchonghe/TODOs.org")))
-  ;; (with-eval-after-load 'org-agenda
-  ;;   (require 'org-projectile)
-  ;;   (push (org-projectile:todo-files) org-agenda-files))
-
-  ;; (global-unset-key (kbd "s-x"))
-  ;; Use cmd key for meta
-  ;; https://superuser.com/questions/297259/set-emacs-meta-key-to-be-the-mac-key
-  (setq mac-option-key-is-meta nil
-        mac-command-key-is-meta t
-        mac-command-modifier 'meta
-        mac-option-modifier 'none)
-  ;; make swithing windows easier
-  (windmove-default-keybindings)          ;; e.g. Shift-arrow to swith windows
-  (global-set-key (kbd "M-j") 'windmove-down)
-  (global-set-key (kbd "M-k") 'windmove-up)
-  (global-set-key (kbd "M-h") 'windmove-left)
-  (global-set-key (kbd "M-l") 'windmove-right)
-
-  ;; https://orgmode.org/manual/Conflicts.html
-  ;; Make windmove work in Org mode:
-  (add-hook 'org-shiftup-final-hook 'windmove-up)
-  (add-hook 'org-shiftleft-final-hook 'windmove-left)
-  (add-hook 'org-shiftdown-final-hook 'windmove-down)
-  (add-hook 'org-shiftright-final-hook 'windmove-right)
-  ;; (define-key org-mode-map (kbd "M-h") nil) ;; org conflicts
-  (define-key org-mode-map (kbd "M-h") 'windmove-left) ;; org conflicts
-
-  )
-
-;; (global-display-line-numbers-mode)
 
 ;; Do not write anything past this comment. This is where Emacs will
 ;; auto-generate custom variable definitions.
@@ -444,10 +356,10 @@ you should place your code here."
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- ;; '(org-agenda-files (quote ("~/Academics/mynote.org")))
+ '(org-agenda-files (quote ("~/Dropbox/orgfiles/agenda.org")))
  '(package-selected-packages
    (quote
-    (git-gutter-fringe+ git-gutter-fringe fringe-helper git-gutter+ git-gutter diff-hl company-auctex auctex-latexmk auctex mu4e-maildirs-extension mu4e-alert ht xterm-color unfill shell-pop mwim multi-term helm-company helm-c-yasnippet fuzzy eshell-z eshell-prompt-extras esh-help company-web web-completion-data company-statistics company-anaconda company auto-yasnippet yasnippet ac-ispell auto-complete web-mode tagedit slim-mode scss-mode sass-mode pug-mode helm-css-scss haml-mode emmet-mode flyspell-correct-helm flyspell-correct flycheck-pos-tip pos-tip flycheck auto-dictionary smeargle orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download mmm-mode markdown-toc markdown-mode magit-gitflow magit-popup htmlize helm-gitignore gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md evil-magit magit git-commit with-editor transient yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc cython-mode anaconda-mode pythonic ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
+    (websocket atomic-chrome eimp epresent ess elfeed-web elfeed-org elfeed-goodies ace-jump-mode noflet elfeed ox-gfm use-package-hydra web-beautify livid-mode skewer-mode simple-httpd json-mode json-snatcher json-reformat js2-refactor multiple-cursors js2-mode js-doc coffee-mode reveal-in-osx-finder pbcopy osx-trash osx-dictionary launchctl git-gutter-fringe+ git-gutter-fringe fringe-helper git-gutter+ git-gutter diff-hl company-auctex auctex-latexmk auctex mu4e-maildirs-extension mu4e-alert ht xterm-color unfill shell-pop mwim multi-term helm-company helm-c-yasnippet fuzzy eshell-z eshell-prompt-extras esh-help company-web web-completion-data company-statistics company-anaconda company auto-yasnippet yasnippet ac-ispell auto-complete web-mode tagedit slim-mode scss-mode sass-mode pug-mode helm-css-scss haml-mode emmet-mode flyspell-correct-helm flyspell-correct flycheck-pos-tip pos-tip flycheck auto-dictionary smeargle orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download mmm-mode markdown-toc markdown-mode magit-gitflow magit-popup htmlize helm-gitignore gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link gh-md evil-magit magit git-commit with-editor transient yapfify pyvenv pytest pyenv-mode py-isort pip-requirements live-py-mode hy-mode dash-functional helm-pydoc cython-mode anaconda-mode pythonic ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox spinner org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-visualstar evil-visual-mark-mode evil-unimpaired evil-tutor evil-surround evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-mc evil-matchit evil-lisp-state smartparens evil-indent-plus evil-iedit-state iedit evil-exchange evil-escape evil-ediff evil-args evil-anzu anzu evil goto-chg undo-tree eval-sexp-fu elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent adaptive-wrap ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

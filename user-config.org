@@ -1,0 +1,679 @@
+#+TITLE: User-config in .spacemacs
+#+AUTHOR: Chong-Chong He
+#+STARTUP: overview
+#+BABEL: :cache yes
+#+PROPERTY: header-args :tangle yes
+
+* About
+
+This is my Spacemacs configuration file (the user-config part) written in a
+construed Org Mode file. It is an attempt to keep my =~/.spacemacs.d/init.el=
+file organized. 
+
+** How to use this?
+
+After executing =C-c C-v t=, everything between each pair of ~#+BEGIN_SRC
+emacs-lisp~ and ~#+END_SRC~ will be exported to =user-config.el=, which will be
+loaded by =.spacemacs.d/init.el=, the init file of Spacemacs.
+
+* Configurations  
+
+** Basics
+   
+Set ~linum~ and some global key-bindings:
+
+#+BEGIN_SRC emacs-lisp
+  ;;(load-directory "~/.spacemacs.d/my-lisp")
+  (global-linum-mode t)
+  (global-set-key (kbd "M-v") 'yank)
+#+END_SRC
+
+The following solves the problem of increasing linum width. Ref:
+https://github.com/syl20bnr/spacemacs/pull/9209
+
+#+begin_src emacs-lisp
+  (defun spacemacs//linum-update-window-scale-fix (win)
+    "Fix linum for scaled text in the window WIN."
+    (set-window-margins win 6))
+#+end_src
+
+~:q~ should kill the current buffer rather than quitting emacs entirely:
+
+#+begin_src emacs-lisp
+  (evil-ex-define-cmd "q" 'kill-this-buffer)
+  ;; Need to type out :quit to close emacs
+  (evil-ex-define-cmd "quit" 'evil-quit)
+#+end_src
+
+** Evil
+
+#+begin_src emacs-lisp
+  (unbind-key (kbd "C-u") evil-normal-state-map)
+#+end_src
+
+** org mode
+
+Load org.el from =.my-elips/org.el=:
+#+begin_src emacs-lisp
+  ;; org mode
+  ;; https://stackoverflow.com/questions/11670654/how-to-resize-images-in-org-mode
+  ;; (setq-default dotspacemacs-configuration-layers
+  ;;               '(
+  ;;                 (org :variables org-projectile-file "~/Dropbox/orgfiles/tasks.org")
+  ;;                 ))
+  ;; (setq-default dotspacemacs-configuration-layers
+  ;;               '((org :variables org-enable-github-support t)))
+  (add-hook 'org-mode-hook 'turn-on-auto-fill)
+
+  ;;The following code causes the error:
+  ;;Error (use-package): org-projectile/:config: Symbol’s function definition is void: org-projectile:per-repo
+  ;; (with-eval-after-load 'org-agenda
+  ;;   (require 'org-projectile)
+  ;;   (push (org-projectile:todo-files) org-agenda-files))
+
+  (load-file "~/.my-elips/org.el")
+#+end_src
+
+Disable descriptive (hidden) links: [[https://emacs.stackexchange.com/questions/5387/show-org-mode-hyperlink-as-plain-text/5417][(Reference)]]. Disabled. Use ~C-c C-l~ to
+edit a link.
+#+BEGIN_SRC emacs-lisp
+  ;; (setq org-descriptive-links nil)
+#+END_SRC
+
+*** org babel
+
+Ref: https://www.juliabloggers.com/julia-with-emacs-org-mode/
+#+begin_src emacs-lisp
+  (require 'ess-site)
+  (setq  inferior-julia-program-name "/Applications/Julia-1.4.app/Contents/Resources/julia/bin/julia")
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '((C . t)
+     (julia . t)
+     (shell . t)
+     (python . t)
+     ))
+
+  (setq
+   org-export-babel-evaluate nil
+   org-confirm-python-evaluate nil
+   org-confirm-babel-evaluate nil
+   org-confirm-C++-evaluate nil
+   )
+#+end_src
+
+*** org-present
+
+#+begin_src emacs-lisp
+  (setq org-present-text-scale 2)
+
+  (eval-after-load "org-present"
+    '(progn
+       (add-hook 'org-present-mode-hook
+                 (lambda ()
+                   (org-present-big)
+                   (org-display-inline-images)
+                   (org-present-hide-cursor)
+                   (org-present-read-only)
+                   ;;(toggle-frame-fullscreen)
+                   ))
+       (add-hook 'org-present-mode-quit-hook
+                 (lambda ()
+                   (org-present-small)
+                   (org-remove-inline-images)
+                   (org-present-show-cursor)
+                   (org-present-read-write)
+                   ;;(toggle-frame-fullscreen)
+                   ))))
+#+end_src
+** yasnippet
+
+#+begin_src emacs-lisp
+  (require 'yasnippet)
+  (yas/load-directory "~/.emacs.d.bk/snippets")
+  ;; (setq yas-triggers-in-field t)
+  ;; (yas/initialize)
+  ;; (yas-minor-mode 1)
+#+end_src
+
+** mu4e
+
+#+begin_src emacs-lisp
+  ;; (setq-default dotspacemacs-configuration-layers
+  ;; 	'((mu4e :variables
+  ;; 		mu4e-installation-path "/usr/local/Cellar/mu/1.2.0_1/share/emacs/site-lisp")))
+  ;; (load-file "~/.spacemacs.d/my-lisp/mail.el")
+  ;; (load-file "~/.spacemacs.d/my-lisp/mininum.el")
+  ;; (load-file "~/.my-elips/mail2.el")
+#+end_src
+
+*** Essential configs
+
+#+begin_src emacs-lisp
+  (require 'mu4e)
+  (setq mail-user-agent 'mu4e-user-agent ;; use mu4e for e-mail in emacs
+        ;; for mbsync, when move a message to All Mail as archiving
+        mu4e-change-filenames-when-moving t
+        mu4e-view-show-addresses t
+        mu4e-maildir "~/Maildir"
+        mu4e-get-mail-command "mbsync umd"
+        mu4e-attachment-dir "~/Documents/MailAttachments"
+        mu4e-update-interval 60
+        )
+#+end_src
+
+*** Rich-text messages
+
+**** Displaying rich-text messages
+
+#+begin_src emacs-lisp :tangle no
+  (setq Mu4e-html2text-command "html2text -utf8 -width 72")
+#+end_src
+
+On OS X, there is a program called textutil as yet another alternative:
+#+begin_src emacs-lisp :tangle yes
+  (setq mu4e-html2text-command
+        "textutil -stdin -format html -convert txt -stdout")
+#+end_src
+
+Open long html messages in browser
+#+begin_src emacs-lisp :tangle no
+  (defun my-mu4e-html2text (msg)
+    "My html2text function; shows short message inline, show
+  long messages in some external browser (see `browse-url-generic-program')."
+    (let ((html (or (mu4e-message-field msg :body-html) "")))
+      (if (> (length html) 20000)
+          (progn
+            (mu4e-action-view-in-browser msg)
+            "[Viewing message in external browser]")
+        (mu4e-shr2text msg))))
+
+  (setq mu4e-html2text-command 'my-mu4e-html2text)
+#+end_src
+
+*** Managing email
+
+#+BEGIN_SRC emacs-lisp
+  ;; don't keep message buffers around
+  (setq message-kill-buffer-on-exit t)
+
+  (setq
+   sendmail-program "/usr/local/bin/msmtp"
+   message-sendmail-f-is-evil t
+   message-sendmail-extra-arguments '("--read-envelope-from")
+   ;; send-mail-function 'smtpmail-send-it
+   ;; message-send-mail-function 'message-send-mail-with-sendmail
+   message-send-mail-function 'smtpmail-send-it
+   user-full-name "ChongChong He"
+   user-mail-address "che1234@umd.edu"
+   smtpmail-smtp-user "che1234@umd.edu"
+   smtpmail-default-smtp-server "smtp.gmail.com"
+   smtpmail-smtp-server "smtp.gmail.com"
+   smtpmail-smtp-service 587
+   ;; smtpmail-stream-type 'starttls
+   starttls-use-gnutls t
+   smtpmail-starttls-credentials '(("smtp.gmail.com" 587 nil nil))
+   ;; smtpmail-auth-credentials (expand-file-name "~/.authinfo.gpg")
+   smtpmail-debug-info t
+   mu4e-compose-keep-self-cc t
+   mu4e-compose-dont-reply-to-self nil
+   ;; smtpmail-auth-credentials '(("smtp.gmail.com" 587 "che1234@umd.edu" nil))
+   ;; testing: removing all the folder def since I don't need
+   ;; it. Later will set folder shortcuts
+   mu4e-trash-folder "/umd/trash"
+   mu4e-sent-folder "/umd/[Gmail].All Mail"
+   mu4e-refile-folder "/umd/[Gmail].All Mail"
+   mu4e-drafts-folder "/umd/[Gmail].Drafts"
+   ;; don't save message to Sent Messages, IMAP takes care of this
+   mu4e-maildir-shortcuts '( ("/umd/INBOX"               . ?i)
+                             ("/umd/[Gmail].Sent Mail"   . ?s)
+                             ;; ("/umd/trash"               . ?t)
+                             ("/umd/[Gmail].Drafts"      . ?d)
+                             ("/umd/[Gmail].Starred"     . ?*)
+                             ("/umd/[Gmail].All Mail"    . ?a)
+                             ("/umd/f.Reference"         . ?r)
+                             ("/umd/f.Followup"          . ?f)
+                             ("/umd/f.Todo"              . ?t)
+                           )
+   )
+#+END_SRC
+
+*** Auto CC self
+  Ref:
+  https://emacs.stackexchange.com/questions/52608/how-to-add-a-value-for-cc-or-reply-to-in-each-new-message/52609
+
+  #+BEGIN_SRC emacs-lisp
+    (add-hook 'mu4e-compose-mode-hook
+              (defun my-add-bcc ()
+                "Add a cc: header."
+                (save-excursion (message-add-header "Cc: che1234@umd.edu\n"))))
+
+    ;; ;; from https://www.djcbsoftware.nl/code/mu/mu4e/Compose-hooks.html
+    ;; (add-hook 'mu4e-compose-mode-hook
+    ;;           (lambda()
+    ;;             (let* ((ctx (mu4e-context-current))
+    ;;                    (name (if ctx (mu4e-context-name ctx))))
+    ;;               (when name
+    ;;                 (cond
+    ;;                  ((string= name "astro")
+    ;;                   (save-excursion (message-add-header "Cc: chongchong@astro.umd.edu\n")))
+    ;;                  ((string= name "terpmail")
+    ;;                   (save-excursion (message-add-header "Cc: che1234@terpmail.umd.edu\n")))
+    ;;                  ((string= name "umd")
+    ;;                   (save-excursion (message-add-header "Cc: che1234@umd.edu\n")))
+    ;; 		 )))))
+  #+END_SRC
+
+*** send html message
+
+Compose message with org-mode support by enabling ~org-mu4e-compose-org-mode~,
+and do ~htmlize-and-send~: (Ref:
+https://kitchingroup.cheme.cmu.edu/blog/2016/10/29/Sending-html-emails-from-org-mode-with-org-mime/
+and https://lists.gnu.org/archive/html/emacs-orgmode/2016-11/msg00351.html) 
+
+#+begin_src emacs-lisp
+  (defun htmlize-and-send ()
+    "When in an org-mu4e-compose-org-mode message, htmlize and send it."
+    (interactive)
+    (when (member 'org~mu4e-mime-switch-headers-or-body post-command-hook)
+      (org-mime-htmlize)
+      (org-mu4e-compose-org-mode)
+      (message-send-and-exit)))
+#+end_src
+
+*** Making mu4e email faster
+
+Ref: https://divansantana.com/making-mu4e-faster/index.html
+# #+begin_src emacs-lisp 
+#   (setq
+#    mu4e-index-lazy-check t
+#    mu4e-index-cleanup nil)
+# #+end_src
+
+*** Send-delay (not using)
+
+**Not using**
+Allowing to schedule mails to be sent at a later time. Thus enabling
+the ability to “undo send” mails.
+
+#+begin_src emacs-lisp :tangle no
+  (require 'mu4e-send-delay)
+  (mu4e-send-delay-setup)
+  (add-hook 'mu4e-main-mode-hook 'mu4e-send-delay-initialize-send-queue-timer)
+
+  (add-hook 'mu4e-main-mode-hook (lambda ()
+                                   (define-key mu4e-compose-mode-map
+                                     (kbd "C-c C-c")
+                                     'mu4e-send-delay-send-and-exit)))
+  (setq mu4e-send-delay-default-delay "1m")
+#+end_src
+
+*** Header of reply
+
+Message citation with date and time:
+#+begin_src emacs-lisp
+  (setq message-citation-line-function 'message-insert-formatted-citation-line)
+  (setq message-citation-line-format "On %a, %b %d %Y at %R, %f wrote:\n")
+#+end_src
+*** Notification
+
+#+begin_src emacs-lisp
+  (setq mu4e-enable-notifications t)
+  (with-eval-after-load 'mu4e-alert
+    ;; Enable Desktop notifications
+    ;; (mu4e-alert-set-default-style 'notifications)) ; For Linux.
+    ;; (mu4e-alert-set-default-style 'libnotify))  ; Alternative for Linux
+    (mu4e-alert-set-default-style 'notifier))   ; For macOS (through the
+                                                ; terminal notifier app).
+    ;; (mu4e-alert-set-default-style 'growl))      ; Alternative for macOS.
+#+end_src
+
+** Latex
+
+#+begin_src emacs-lisp
+  (setq TeX-auto-save t)
+  (add-hook 'LaTeX-mode-hook 'hs-minor-mode)
+  (add-hook 'LaTeX-mode-hook 'outline-minor-mode)
+  (setq TeX-PDF-mode t)	      ;; Compile documents to PDF by default
+  ;; The following two lines make forward syncing possible. Tested on 2020-02-17
+  (setq TeX-view-program-selection '((output-pdf "PDF Viewer")))
+  (setq TeX-view-program-list
+        '(("PDF Viewer" "/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b")))
+
+  ;; CDLaTeX: bug, won't recognize multiple files if turned on
+  ;; (add-hook 'LaTeX-mode-hook 'turn-on-cdlatex)
+  ;; Make emacs aware of multi-file projects: do not need on spacemacs. not working when cdlatex is on
+  ;; (setq-default TeX-master nil)
+  (electric-pair-mode)
+  (add-hook 'LaTeX-mode-hook
+            '(lambda ()
+               (define-key LaTeX-mode-map (kbd "$") 'self-insert-command)
+               ))
+
+  ;; (setq TeX-parse-self t)
+  ;; ;; (add-hook 'latex-mode-hook 'turn-on-cdlatex)   ; with Emacs latex mode
+  ;; (add-hook 'LaTeX-mode-hook 'turn-on-reftex)
+  ;; (setq reftex-plug-into-AUCTeX t)
+  ;; ;; (setq reftex-default-bibliography '("/Users/chongchonghe/Documents/bib_tmp.bib"))
+  ;; ;; (setq helm-bibtex-bibliography '("/Users/chongchonghe/Documents/bib_tmp.bib"))
+
+  ;; (setq TeX-source-correlate-start-server t)
+  ;; ;;
+  ;; (setq TeX-source-correlate-mode t) ; ?
+  ;; (setq TeX-source-correlate-method 'synctex) ; ?
+#+end_src
+
+** Elfeed
+   
+[[https://github.com/skeeto/elfeed][Elfeed]] is a web feeds client that supports both Atom and RSS feeds.
+
+*** User manual
+
+References: 
+- https://www.spacemacs.org/layers/+web-services/elfeed/README.html
+- 
+  
+Shortcuts:
+| Key Binding    | Description                                       |
+|----------------+---------------------------------------------------|
+| ~SPC a f~      | start elfeed                                      |
+| ~gr~           | update all the feeds                              |
+| ~gu~           | unjam elfeed if it is slow due to slow connection |
+| ~w/W~          | start/stop web server                             |
+| ~m~            | toggle tag star                                   |
+| ~s~            | update the search filter ([[https://github.com/skeeto/elfeed#filter-syntax][filter syntax]])          |
+| ~c~            | clear the search filter                           |
+| ~b~            | open url in browser                               |
+| ~r/u~, ~+/-~   | mark as read/unread                               |
+| ~clear filter~ | set filter to default                             |
+
+*** Configs
+
+  Toggle star: (Ref: http://pragmaticemacs.com/emacs/star-and-unstar-articles-in-elfeed/)
+  #+begin_src emacs-lisp
+    (require 'elfeed)
+
+    (defalias 'elfeed-toggle-star
+      (elfeed-expose #'elfeed-search-toggle-all 'star))
+
+    (eval-after-load 'elfeed-search
+      '(define-key elfeed-search-mode-map (kbd "m") 'elfeed-toggle-star))
+
+    ;; face for starred articles
+    (defface elfeed-search-starred-title-face
+      '((t :foreground "#f77"))
+      "Marks a starred Elfeed entry.")
+
+    (push '(star elfeed-search-starred-title-face) elfeed-search-face-alist)
+  #+end_src
+
+Managing ArXiv RSS Feeds in Emacs: (https://cundy.me/post/elfeed/)
+
+#+begin_src emacs-lisp
+  (defun concatenate-authors (authors-list)
+    "Given AUTHORS-LIST, list of plists; return string of all authors
+  concatenated."
+    (mapconcat
+     (lambda (author) (plist-get author :name))
+     authors-list ", "))
+
+  (defun my-search-print-fn (entry)
+    "Print ENTRY to the buffer."
+
+    (let* ((title (or (elfeed-meta entry :title) (elfeed-entry-title entry) ""))
+           (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+           (feed (elfeed-entry-feed entry))
+           (feed-title
+            (when feed
+              (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+           (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+           (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+           (title-width (- (window-width) elfeed-goodies/feed-source-column-width
+                           elfeed-goodies/tag-column-width 4))
+           (title-column (elfeed-format-column
+                          title (elfeed-clamp
+                                 elfeed-search-title-min-width
+                                 title-width
+                                 title-width)
+                          :left))
+           (tag-column (elfeed-format-column
+                        tags-str 13
+                        :left))
+           (feed-column (elfeed-format-column
+                         feed-title 11
+                         :left))
+           (entry-authors (concatenate-authors
+                           (elfeed-meta entry :authors)))
+           (authors-column (elfeed-format-column
+                            entry-authors 40
+                            :left))
+           )
+
+      (if (>= (window-width) (* (frame-width) elfeed-goodies/wide-threshold))
+          (progn
+            (insert (propertize feed-column 'face 'elfeed-search-feed-face) " ")
+            (insert (propertize tag-column 'face 'elfeed-search-tag-face) " ")
+            (insert (propertize authors-column
+                                'face 'elfeed-search-date-face
+                                'kbd-help entry-authors) " ")
+            (insert (propertize title 'face title-faces 'kbd-help title))
+            )
+        (insert (propertize title 'face title-faces 'kbd-help title)))))
+
+  (setq elfeed-search-print-entry-function #'my-search-print-fn)
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+  (defun concatenate-authors (authors-list)
+    "Given AUTHORS-LIST, list of plists; return string of all authors
+  concatenated."
+    (mapconcat
+     (lambda (author) (plist-get author :name))
+     authors-list ", "))
+
+  (defun my-search-print-fn (entry)
+    "Print ENTRY to the buffer."
+    (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
+           (title (or (elfeed-meta entry :title)
+                      (elfeed-entry-title entry) ""))
+           (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+           (feed-title (when feed
+                         (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+           (feed-title-column (elfeed-format-column
+                               feed-title 11
+                               :right))
+           (feed (elfeed-entry-feed entry))
+           (feed-title
+            (when feed
+              (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+           (entry-authors (concatenate-authors
+                           (elfeed-meta entry :authors)))
+           (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+           ;; (tags-str (mapconcat
+           ;;            (lambda (s) (propertize s 'face
+           ;;                                    'elfeed-search-tag-face))
+           ;;            tags ","))
+           (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+           (title-width (- (window-width) 10
+                           elfeed-search-trailing-width))
+           (title-column (elfeed-format-column
+                          title (elfeed-clamp
+                                 elfeed-search-title-min-width
+                                 title-width
+                                 elfeed-search-title-max-width)
+                          :left))
+           ;; (authors-width 135)
+           (authors-column (elfeed-format-column
+                            entry-authors 40
+                            :left)))
+    
+      (insert (propertize feed-title-column
+                          'face 'elfeed-search-feed-face) " ")
+
+      (insert (propertize date 'face 'elfeed-search-date-face) " ")
+    
+      (insert (propertize title-column
+                          'face title-faces 'kbd-help title) " ")
+    
+      (insert (propertize authors-column
+                          'face 'elfeed-search-date-face
+                          'kbd-help entry-authors) " ")
+    
+      ;; (when feed-title
+      ;;   (insert (propertize entry-authors
+      ;; 'face 'elfeed-search-feed-face) " "))
+    
+      ;; (when entry-authors
+      ;;   (insert (propertize feed-title
+      ;;                       'face 'elfeed-search-feed-face) " "))
+    
+      ;; (when tags
+      ;;   (insert "(" tags-str ")"))
+    
+      )
+    )
+  (setq elfeed-search-print-entry-function #'my-search-print-fn)
+#+end_src
+
+#+begin_src emacs-lisp :tangle no
+  (defun concatenate-authors (authors-list)
+    "Given AUTHORS-LIST, list of plists; return string of all authors
+  concatenated."
+    (mapconcat
+     (lambda (author) (plist-get author :name))
+     authors-list ", "))
+
+  (defun my-search-print-fn (entry)
+    "Print ENTRY to the buffer."
+    (let* ((date (elfeed-search-format-date (elfeed-entry-date entry)))
+           (title (or (elfeed-meta entry :title)
+                      (elfeed-entry-title entry) ""))
+           (title-faces (elfeed-search--faces (elfeed-entry-tags entry)))
+           (feed (elfeed-entry-feed entry))
+           (feed-title
+            (when feed
+              (or (elfeed-meta feed :title) (elfeed-feed-title feed))))
+           ;; Should use this as a template to set the width of a column
+           (feed-title-column (elfeed-format-column
+                               feed-title 11
+                               :right))
+           (entry-authors (concatenate-authors
+                           (elfeed-meta entry :authors)))
+           (tags (mapcar #'symbol-name (elfeed-entry-tags entry)))
+           (tags-str (concat "[" (mapconcat 'identity tags ",") "]"))
+           ;; (tags-str (mapconcat
+           ;;      (lambda (s) (propertize s 'face
+           ;;            'elfeed-search-tag-face))
+           ;;      tags ","))
+           ;; (tags-width 11)
+           ;; (tags-column (elfeed-format-column
+           ;;               tags-str (elfeed-clamp
+           ;;                         elfeed-search-title-min-width
+           ;;                         tags-width
+           ;;                         elfeed-search-title-max-width)
+           ;;               :left))
+           ;; (title-width (- (window-width) 10 elfeed-search-trailing-width))
+           ;; (title-column (elfeed-format-column
+           ;;                title (elfeed-clamp
+           ;;                       elfeed-search-title-min-width
+           ;;                       title-width
+           ;;                       elfeed-search-title-max-width)
+           ;;                :left))
+           (title-column (elfeed-format-column
+                          title 200
+                          :left))
+           ;; (authors-width 65)
+           ;; (authors-column (elfeed-format-column
+           ;;                  entry-authors (elfeed-clamp
+           ;;                                 elfeed-search-title-min-width
+           ;;                                 authors-width
+           ;;                                 61)
+           ;;                  :left)))
+           (authors-column (elfeed-format-column
+                            entry-authors 40
+                            :left))
+           ))
+  
+    ;; (when entry-authors
+    ;;   (insert (propertize feed-title
+    ;;                       'face 'elfeed-search-feed-face) " "))
+    (insert (propertize feed-title-column
+                        'face 'elfeed-search-feed-face) " ")
+  
+    (insert (propertize date 'face 'elfeed-search-date-face) " ")
+  
+    ;; I don't need tags in the header because starred item are shown as red
+    ;; (insert (propertize tags-column 'face tags-str) " ")
+  
+    (insert (propertize title-column
+                        'face title-faces 'kbd-help title) " ")
+  
+    (insert (propertize authors-column
+                        'face 'elfeed-search-date-face
+                        'kbd-help entry-authors) " ")
+  
+    ;; (when feed-title
+    ;;   (insert (propertize entry-authors
+    ;; 'face 'elfeed-search-feed-face) " "))
+  
+    )
+  (setq elfeed-search-print-entry-function #'my-search-print-fn)
+#+end_src
+
+** Key-bindings
+
+#+begin_src emacs-lisp
+  ;; ;; Use cmd key for meta
+  ;; ;; https://superuser.com/questions/297259/set-emacs-meta-key-to-be-the-mac-key
+  (setq mac-option-key-is-meta nil
+        mac-command-key-is-meta t
+        mac-command-modifier 'meta
+        mac-option-modifier 'super)
+  ;; ;; make swithing windows easier
+  (global-set-key (kbd "M-j") 'evil-window-down)
+  (global-set-key (kbd "M-k") 'evil-window-up)
+  (global-set-key (kbd "M-h") 'evil-window-left)
+  (global-set-key (kbd "M-l") 'evil-window-right)
+  ;; trying bind-key.el: https://emacs.stackexchange.com/questions/352/how-to-override-major-mode-bindings
+
+  ;; ;; not working
+  ;; (use-package bind-key
+  ;;   :config
+  ;;   (bind-keys*
+  ;;    ("M-h" . 'evil-window-left)
+  ;;    ("M-l" . 'evil-window-right)
+  ;;    ("M-j" . 'evil-window-up)
+  ;;    ("M-k" . 'evil-window-down)
+  ;;    )
+  ;; )
+  ;; ;; not working
+  ;; (define-key org-mode-map (kbd "M-j") nil)
+  ;; (global-set-key (kbd "C-j") 'windmove-down)
+  ;; (global-set-key (kbd "M-<up>") 'windmove-up)
+  ;; (global-set-key (kbd "M-<right>") 'windmove-right)
+  ;; (global-set-key (kbd "M-<left>") 'windmove-left)
+  ;; Abandoned. Not working in org mode under spacemacs
+  ;; (global-set-key (kbd "M-j") 'windmove-down)
+  ;; (global-set-key (kbd "M-k") 'windmove-up)
+  ;; (global-set-key (kbd "M-h") 'windmove-left)
+  ;; (global-set-key (kbd "M-l") 'windmove-right)
+  ;; (global-set-key (kbd "s-x") nil) ; my habits causes mistake
+  ;; ;; https://orgmode.org/manual/Conflicts.html
+  ;; ;; Make windmove work in Org mode:
+  ;; (add-hook 'org-shiftup-final-hook 'windmove-up)
+  ;; (add-hook 'org-shiftleft-final-hook 'windmove-left)
+  ;; (add-hook 'org-shiftdown-final-hook 'evil-windmove-down)
+  ;; (add-hook 'org-shiftright-final-hook 'windmove-right)
+  ;; (define-key org-mode-map (kbd "M-h") 'windmove-left) ;; org conflicts
+  ;; ;; Keybindings
+  ;; (define-key evil-normal-state-map (kbd "M-h") #'evil-window-left)
+  ;; (define-key evil-normal-state-map (kbd "M-j") #'evil-window-down)
+  ;; (define-key evil-normal-state-map (kbd "M-k") #'evil-window-up)
+  ;; (define-key evil-normal-state-map (kbd "M-l") #'evil-window-right)
+#+end_src
+** Atomic-chrome
+
+#+begin_src emacs-lisp
+  (require 'atomic-chrome)
+  (atomic-chrome-start-server)
+#+end_src
