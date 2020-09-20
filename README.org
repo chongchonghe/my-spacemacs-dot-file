@@ -1,6 +1,6 @@
 * About
 
 This is my [[https://www.spacemacs.org/][spacemacs]] dot directory. Spacemacs is configured by =init.el= and
-=user-config.el=. The latter is exported from =user-config.org= using org-babel,
+=user-config.el=. The latter is exported from [[file:user-config.org][user-config.org]] using org-babel,
 which contains the majority of the configurations.
 
